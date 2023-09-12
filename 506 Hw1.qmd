@@ -1,0 +1,424 @@
+---
+title: "Stats506 Hw1"
+format:
+  html:
+    toc: true
+    number-sections: true
+    embed-resources: true
+    colorlinks: true
+---
+
+## Problem1
+
+part(a):
+
+```{r}
+
+setwd("/Users/huanglingqi/Downloads")
+data <- read.table("Data.txt", header = TRUE)
+
+```
+
+part(b):
+
+```{r}
+class1 <- which(data$class == 1)
+class2 <- which(data$class == 2)
+class3 <- which(data$class == 3)
+table(data$class)
+```
+
+After running the code above, we find there are 59 wine of class 1, 71 wine of class 2, and 48 wine of class3
+
+part(c):
+
+1.  To find the class of wine with highest alcohol content, we can run the below code:
+
+```{r}
+highest_alco <- which.max(data$class)#find the index of wine with highest content of alcohol
+class_high <- data$class[highest_alco]# find the class
+print(class_high)
+```
+
+Answer: we find that the wine with highest alcohol content belongs to class 3
+
+2.  To find the class of wine with lowest alcohol content, we can run the below code:
+
+    ```{r}
+    lowest_alco <- which.min(data$class)#find the index of wine with lowest content of alcohol
+    class_low <- data$class[lowest_alco]# find the class
+    print(class_low)
+    ```
+
+Answer: we find that the wine with lowest alcohol content belongs to class 1
+
+3.  
+
+To find the number of wines that have higher levels of magnesium than that of German beer, we can run the below code:
+
+```{r}
+German_above.ind <- which(data$magnesium > 114)
+print(German_above.ind)
+```
+
+Answer: the above code tells us the index of wines that have higher levels of magnesium than that of German beers, and the total number of such wine is 26 by checking the 'Values' in Environment.
+
+4.  To solve this problem, we can run the below code:
+
+```{r}
+data.class1 <- data[class1, ]
+data.class2 <- data[class2, ]
+data.class3 <- data[class3, ]
+
+abovegerman_1 <- sum(data.class1$magnesium >= 114)
+abovegerman_2 <- sum(data.class2$magnesium >= 114)
+abovegerman_3 <- sum(data.class3$magnesium >= 114)
+print(abovegerman_1)
+print(abovegerman_2)
+print(abovegerman_3)
+```
+
+Answer: In class 1, there are 15 wines that have higher levels of magnesium than average German beer. In class2, there are 6 wines that have higher levels of magnesium than average German beer. In class3, there are 5 wines that have higher levels of magnesium than average German beer.
+
+part(d):
+
+To construct the table, we can run the below code:
+
+```{r}
+class_ind <- c("Average of all", "Average of class1", "Average of class2", "Average of class3")
+class_mean <- c(mean(data$magnesium), mean(data.class1$magnesium), mean(data.class2$magnesium), mean(data.class3$magnesium))
+mean_data <- data.frame(class_ind, class_mean)
+
+mean_data
+```
+
+part(e): We first assume that ash of three classes(Assume they all follows normal distribution) shares the same variance, to check if they get the same mean, we can run the below code:
+
+```{r}
+t.test(data.class1$ash, data.class2$ash, var.equal = T)
+t.test(data.class1$ash, data.class3$ash, var.equal = T)
+t.test(data.class2$ash, data.class3$ash, var.equal = T)
+```
+
+If we assume the ash from three different class follows normal distribution with same variance, we may conclude that the ash mean difference of class1 and class2 is not 0, ash mean difference of class1 and class3 is 0, and the ash mean difference of class2 and class3 is not 0.
+
+Now if we assume that ash of three classes did not share the same difference, then we run the below code:
+
+```{r}
+t.test(data.class1$ash, data.class2$ash, var.equal = F)
+t.test(data.class1$ash, data.class3$ash, var.equal = F)
+t.test(data.class2$ash, data.class3$ash, var.equal = F)
+
+```
+
+Answer: we will get the same conclusion as before, so we finally conclude that the ash mean difference of class1 and class2 is not 0, ash mean difference of class1 and class3 is 0, and the ash mean difference of class2 and class3 is not 0, whatever if they share the same variance.
+
+## Problem2
+
+part(a)
+
+```{r}
+isPerfectPower <- function(a, b){
+  output <- list(isPerfect = NA, root = NA)
+  for (i in 1: a){
+    if (i^b != a){
+      output <- list(isPerfect = i^b !=a, root = b)
+    }
+    if (i^b == a){
+      output <- list(isPerfect = i^b == a, root = b)
+      break
+    }
+    if (i == a){
+      output <- list(isPerfect = i^b ==a, root = "not a perfect power")
+    }
+  }
+  return (output)
+}
+isPerfectPower(27, 3)
+
+```
+
+part(b)
+
+```{r}
+findRootPower <- function(a){
+  output <- list(number = a, root = NA)
+  k = 0
+  for (i in 2: floor(a/2)){
+    for (j in 2: floor(a/2)){
+      if (i^j == a){
+        output <- list(number = a, root = j)
+       break
+      }
+      if (i^j >= a){
+        output <- list(number = a, root = j)
+        break
+      }
+    }
+    if (i^(output$root) == a){
+      print(paste(c(a), "=", c(i), "^", c(output$root)))
+      break
+    }
+    if (i == floor(a/2)){
+      print("this is not a perfect power")
+      break
+    }
+    k = k + 1
+  }
+}
+
+findRootPower(27)
+findRootPower(13060694016)
+findRootPower(7776)
+findRootPower(170859375)
+findRootPower(58247422)
+findRootPower(94143178827)
+```
+
+Answer: By running the code above and check these 6 numbers, we find that 27 = 3\^3, 13060694016 = 6 \^ 13, 7776 = 6\^5, 170859375 = 15\^7 , 58247422 is not a perfect power, 94143178827 = 3\^23
+
+## Problem3
+
+part(a):
+
+Produce two R functions: The first should take in a vector of suits and a vector of ranks representing a 5-card hand, and return the name of the hand (in 5 card stud poker). The second should simulate dealing a round of cards in a game of poker (5 card stud). The user should be able to specify the number of players. Show the user all the hands, and use the first function to display the name of each of the hands.
+
+```{r}
+# Function to determine the name of a poker hand
+get_poker_hand_name <- function(suits, ranks) {
+  if (length(unique(ranks)) == 5) {
+    if (max(table(ranks)) == 1 && all(diff(ranks) == 1)) {
+      if (length(unique(suits)) == 1) {
+        return("Straight Flush")
+      } else {
+        return("Straight")
+      }
+    }
+  }
+  if (max(table(ranks)) == 4) {
+    return("Four of a Kind")
+  }
+  if (max(table(ranks)) == 3 && sum(table(ranks) == 2) == 1) {
+    return("Full House")
+  }
+  if (length(unique(suits)) == 1) {
+    return("Flush")
+  }
+  if (max(table(ranks)) == 3) {
+    return("Three of a Kind")
+  }
+  if (sum(table(ranks) == 2) == 2) {
+    return("Two Pair")
+  }
+  if (max(table(ranks)) == 2) {
+    return("One Pair")
+  }
+  return("High Card")
+}
+
+# Function to simulate dealing a round of poker for multiple players
+deal_poker_round <- function(num_players) {
+  if (num_players < 2 || num_players > 10) {
+    cat("Number of players must be between 2 and 10.\n")
+    return(NULL)
+  }
+  
+  # Define the suits and ranks
+  suits <- c("Hearts", "Diamonds", "Clubs", "Spades")
+  ranks <- c("2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace")
+  
+  # Create a deck of cards
+  deck <- expand.grid(rank = ranks, suit = suits)
+  
+  # Shuffle the deck
+  set.seed(123) # For reproducibility
+  shuffled_deck <- deck[sample(nrow(deck)), ]
+  
+  # Deal cards to each player
+  player_hands <- vector("list", num_players)
+  for (i in 1:num_players) {
+    player_hands[[i]] <- shuffled_deck[((i - 1) * 5 + 1):(i * 5), ]
+  }
+  
+  # Determine and display the hands for each player
+  for (i in 1:num_players) {
+    cat(paste("Player", i, "hand:\n"))
+    cat(paste(player_hands[[i]]$rank, "of", player_hands[[i]]$suit, "\n"))
+    hand_name <- get_poker_hand_name(player_hands[[i]]$suit, player_hands[[i]]$rank)
+    cat("Hand Name:", hand_name, "\n\n")
+  }
+}
+
+# Example usage: Simulate dealing a round of poker for 5 players
+deal_poker_round(5)
+deal_poker_round(4)
+deal_poker_round(10)
+```
+
+part(b):The code could be successfully ran. I tried to modify the seed of shuffle of cards, changed the number of player for 4times, and there is no error appears.
+
+```{r}
+# Function to determine the name of a poker hand
+get_poker_hand_name <- function(suits, ranks) {
+  if (length(unique(ranks)) == 5) { #To Judge if we get 5cards with different rank, ie,A,7,8,9,J
+    if (max(table(ranks)) == 1 && all(diff(ranks) == 1)) {#To judge if we get a flush end with "ace"
+      if (length(unique(suits)) == 1) {#if 5 cards got the same suit, return Straight Flush
+        return("Straight Flush")
+      } else {
+        return("Straight")# if 5 cards did not get the same suit, return Straight
+      }
+    }
+  }
+  if (max(table(ranks)) == 4) {
+    return("Four of a Kind") #To judge if we get 4 cards with the same rank, if so, return four of a kind
+  }
+  if (max(table(ranks)) == 3 && sum(table(ranks) == 2) == 1) {
+    return("Full House") #To judge if we get 3 cards with the same rank and one pair, then we return 'full house', sum(table(ranks) ==2)==1 meaning to judge if there if a exactly a pair in five cards
+  }
+  if (length(unique(suits)) == 1) {
+    return("Flush") #This aim to judege if the 5 cards got the same suit, eg, all 5 cards with suit of spade, if so, return flush
+  }
+  if (max(table(ranks)) == 3) {
+    return("Three of a Kind") # This aim to judge if the highest frequency of card with any rank is 3, if so, return 'three of a kind'.
+  }
+  if (sum(table(ranks) == 2) == 2) {
+    return("Two Pair")# This aim to judge if there are two pairs in 5 card, if so, return 'two pairs' table(ranks) gives the frequency of rank of card between 5 cards, sum(table(ranks)==2)==2 would judge if there are exactly two pairs( the one possibility of the sum code may give us (True, False, True) and the sum of it is 2)
+  }
+  if (max(table(ranks)) == 2) {
+    return("One Pair")# This aim to judge if the maximum of frequency of a rank of card is two, if so, return One Pair.
+  }
+  return("High Card")# If all above "if" statement are not satisfied, return 'high card'.
+}
+
+# Function to simulate dealing a round of poker for multiple players
+deal_poker_round <- function(num_players) {
+  if (num_players < 2 || num_players > 10) {
+    cat("Number of players must be between 2 and 10.\n")
+    return(NULL) # Here we first if the number of player joined the game is between 2 and 10, if not we return Null message.
+  }
+  
+  # Define the suits and ranks
+  suits <- c("Hearts", "Diamonds", "Clubs", "Spades")
+  ranks <- c("2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace")
+  #Here we define all suits and all ranks.
+  
+  # Create a deck of cards
+  deck <- expand.grid(rank = ranks, suit = suits)
+ # Here we create a Data frame from all combination of factor Variables, in other words, to find the cartesian product and then put it into a dataframe.
+  
+  # Shuffle the deck
+  set.seed(107) # For reproducibility
+  shuffled_deck <- deck[sample(nrow(deck)), ]# Here we shuffle the deck and without replacement.
+  
+  # Deal cards to each player
+  player_hands <- vector("list", num_players) #Here we construct a vector and each element at begining is a null list.
+  for (i in 1:num_players) {
+    player_hands[[i]] <- shuffled_deck[((i - 1) * 5 + 1):(i * 5), ]
+  }#Now we deal cards to each player, the first player get cards from 1th to 5th, and the ith player get cards from '(i-1)*5+1 th' card to 'i*5' th from a shuffled deck
+  
+  # Determine and display the hands for each player
+  for (i in 1:num_players) {
+    cat(paste("Player", i, "hand:\n"))
+    cat(paste(player_hands[[i]]$rank, "of", player_hands[[i]]$suit, "\n"))
+    hand_name <- get_poker_hand_name(player_hands[[i]]$suit, player_hands[[i]]$rank)
+    cat("Hand Name:", hand_name, "\n\n")
+  }
+}
+#we finally show each players' card and judge its form, \n\n meaning to change the output to next row, paste meaning to combine stirngs and vectors, cat meaning combine everything and change it to a string
+
+# Example usage: Simulate dealing a round of poker for 5 players
+deal_poker_round(5)
+
+```
+
+part(d):
+
+(1): The input and the output are as described as above, but the output accuracy is bad. I think there is not problem about dealing cards to each player, but something wrong with the function of identifying hand name. It did not include the case of Royal flush. Also, when I fix seed(1000) with 5 players, the ranks of cards of player2 is (4, 10, 6, Jack, King) but the hand name is a straight, which is absurd. Also, if I enter (Ace, 2, 3, 4, 5) into the the function with whatever suit, the hand name is not a straight.
+
+(2): I notice whatever the seed is, if one of (King, Queen, Jack) exist without form a pair, it will always return straight. Also, I tested many cases and there is no duplication.
+
+(3): If we enter the number of player 11 into the function, it will return Null, so there is no problem about the number of player.
+
+(4): So I think the main problem of the entire code is the way of judging straight, and I think there is something wrong with the code 'if (max(table(ranks)) == 1 && all(diff(ranks) == 1))' and 'if (length(unique(suits)) == 1) ', that the diff(ranks) between "ace, Queen, King, Jack" is not well defined.
+
+Below is the code I modified, but I have to acclaim that due to my limited knowledge of programing, I still asked help from Chatgpt and it help me to write the code of "sorted_ranks \<- sort(as.numeric(factor(ranks, levels = c("2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"))))". Now after my test, I think the problem got almost fixed.
+
+```{r}
+# Function to determine the name of a poker hand
+get_poker_hand_name <- function(suits, ranks) {
+  if (length(unique(ranks)) == 5) {
+    sorted_ranks <- sort(as.numeric(factor(ranks, levels = c("2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"))))
+    if (all(diff(sorted_ranks) == 1)) {
+      if (length(unique(suits)) == 1) {
+        if (sorted_ranks[1] == 1 && sorted_ranks[5] == 13) {
+          return("Royal Flush")
+        } else {
+          return("Straight Flush")
+        }
+      } else {
+        return("Straight")
+      }
+    }
+  }
+  if (max(table(ranks)) == 4) {
+    return("Four of a Kind")
+  }
+  if (max(table(ranks)) == 3 && sum(table(ranks) == 2) == 1) {
+    return("Full House")
+  }
+  if (length(unique(suits)) == 1) {
+    return("Flush")
+  }
+  if (max(table(ranks)) == 3) {
+    return("Three of a Kind")
+  }
+  if (sum(table(ranks) == 2) == 2) {
+    return("Two Pair")
+  }
+  if (max(table(ranks)) == 2) {
+    return("One Pair")
+  }
+  return("High Card")
+}
+
+
+deal_poker_round <- function(num_players) {
+  if (num_players < 2 || num_players > 10) {
+    cat("Number of players must be between 2 and 10.\n")
+    return(NULL) # Here we first if the number of player joined the game is between 2 and 10, if not we return Null message.
+  }
+  
+  # Define the suits and ranks
+  suits <- c("Hearts", "Diamonds", "Clubs", "Spades")
+  ranks <- c("2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace")
+  #Here we define all suits and all ranks.
+  
+  # Create a deck of cards
+  deck <- expand.grid(rank = ranks, suit = suits)
+ # Here we create a Data frame from all combination of factor Variables, in other words, to find the cartesian product and then put it into a dataframe.
+  
+  # Shuffle the deck
+  set.seed(1000) # For reproducibility
+  shuffled_deck <- deck[sample(nrow(deck)), ]# Here we shuffle the deck and without replacement.
+  
+  # Deal cards to each player
+  player_hands <- vector("list", num_players) #Here we construct a vector and each element at begining is a null list.
+  for (i in 1:num_players) {
+    player_hands[[i]] <- shuffled_deck[((i - 1) * 5 + 1):(i * 5), ]
+  }#Now we deal cards to each player, the first player get cards from 1th to 5th, and the ith player get cards from '(i-1)*5+1 th' card to 'i*5' th from a shuffled deck
+  
+  # Determine and display the hands for each player
+  for (i in 1:num_players) {
+    cat(paste("Player", i, "hand:\n"))
+    cat(paste(player_hands[[i]]$rank, "of", player_hands[[i]]$suit, "\n"))
+    hand_name <- get_poker_hand_name(player_hands[[i]]$suit, player_hands[[i]]$rank)
+    cat("Hand Name:", hand_name, "\n\n")
+  }
+}
+#we finally show each players' card and judge its form, \n\n meaning to change the output to next row, paste meaning to combine stirngs and vectors, cat meaning combine everything and change it to a string
+
+# Example usage: Simulate dealing a round of poker for 5 players
+deal_poker_round(8)
+```
+
+## 
