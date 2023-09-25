@@ -1,0 +1,397 @@
+---
+title: "Stats506 Hw2"
+author: "Lingqi Huang"
+format: html
+editor: visual
+embed-resources: true
+---
+
+```{r}
+
+```
+
+Github : https://github.com/KingOliver666/HW-.git
+
+## Problem 1
+
+part(a):
+
+Version1:
+
+```{r}
+
+```
+
+```{r}
+play_dice1 <- function(n){
+  dice_number <- 1 : 6
+  sum <- 0
+  trials <- sample(dice_number, size = n, replace = TRUE)
+  trials[trials == 1] <- -2
+  trials[trials == 2] <- 0
+  trials[trials == 3] <- -2
+  trials[trials == 4] <- 2
+  trials[trials == 5] <- -2
+  trials[trials == 6] <- 4
+  for (i in 1: n){
+    sum <- sum + trials[i]
+  }
+  return (sum)
+}
+play_dice1(10)
+```
+
+Version2:
+
+```{r}
+play_dice2 <- function(n){
+  trials <- sample(1: 6, size = n, replace = TRUE)
+  trials[trials == 1] <- -2
+  trials[trials == 2] <- 0
+  trials[trials == 3] <- -2
+  trials[trials == 4] <- 2
+  trials[trials == 5] <- -2
+  trials[trials == 6] <- 4
+  return(sum(trials))
+}
+play_dice2(10)
+```
+
+Version3:
+
+```{r}
+play_dice3 <- function(n){
+  cost <- 2
+  dice_rolls <- sample(1:6, n, replace = TRUE)
+  outcome_table <- table(factor(dice_rolls, levels = 1:6))
+  
+  
+  gain <- 2 * as.integer(outcome_table["2"]) + 4 * as.integer(outcome_table["4"]) + 6 * as.integer(outcome_table["6"]) - (cost * n)
+  
+  return(gain)
+}
+
+play_dice3(10)
+```
+
+Version4:
+
+```{r}
+play_dice4 <- function(n) {
+  trials <- sample(1:6, size = n, replace = TRUE)
+  trials[trials == 1] <- -2
+  trials[trials == 2] <- 0
+  trials[trials == 3] <- -2
+  trials[trials == 4] <- 2
+  trials[trials == 5] <- -2
+  trials[trials == 6] <- 4
+  gain <- matrix(trials, ncol = 1)
+  return (apply(gain, 2, sum))
+}
+play_dice4(10)
+```
+
+part(b):
+
+```{r}
+## demonstrate on version1
+a_3 <- rep(NA, 10)
+a_3000 <- rep(NA, 10)
+for (i in 1: 10){
+  a_3[i] <- play_dice1(3)
+  a_3000[i] <- play_dice1(3000)
+}
+version1_result <- cbind(a_3, a_3000)
+version1_result
+a <- c(mean(a_3), mean(a_3000))
+a
+```
+
+```{r}
+## demonstrate on version2
+b_3 <- rep(NA, 10)
+b_3000 <- rep(NA, 10)
+for (i in 1: 10){
+  b_3[i] <- play_dice2(3)
+  b_3000[i] <- play_dice2(3000)
+}
+version2_result <- cbind(b_3, b_3000)
+version2_result
+b <- c(mean(b_3), mean(b_3000))
+b
+```
+
+```{r}
+## demonstrate on version3
+c_3 <- rep(NA, 10)
+c_3000 <- rep(NA, 10)
+for (i in 1: 10){
+  c_3[i] <- play_dice3(3)
+  c_3000[i] <- play_dice3(3000)
+}
+version3_result <- cbind(c_3, c_3000)
+version3_result
+c <- c(mean(c_3), mean(c_3000))
+c
+```
+
+```{r}
+## demonstrate on version4
+d_3 <- rep(NA, 10)
+d_3000 <- rep(NA, 10)
+for (i in 1: 10){
+  d_3[i] <- play_dice4(3)
+  d_3000[i] <- play_dice4(3000)
+}
+version4_result <- cbind(d_3, d_3000)
+version4_result
+d <- c(mean(d_3), mean(d_3000))
+d
+```
+
+Answer: So all four functions run successfully, I try to calculate the mean of all ten experiments for these four function, the outcome of input of 3000 will got a mean with larger variation.
+
+part(c):
+
+```{r}
+set.seed(110101)
+# demonstrate version1
+print(c(play_dice1(3), play_dice1(3000)))
+```
+
+```{r}
+set.seed(110101)
+#demonstrate version2
+print(c(play_dice2(3), play_dice2(3000)))
+```
+
+```{r}
+set.seed(110101)
+#demonstrate version3
+print(c(play_dice3(3), play_dice3(3000)))
+```
+
+```{r}
+set.seed(110101)
+#demonstrate version4
+print(c(play_dice4(3), play_dice4(3000)))
+```
+
+Answer: So all four function will share the same answer if we control the randomization that I set.seed(110101)
+
+part(d):
+
+```{r}
+library(microbenchmark)
+x_1 <- 100
+
+microbenchmark(play_dice1(x_1), play_dice2(x_1), play_dice3(x_1), play_dice4(x_1))
+```
+
+```{r}
+x_2 <- 10000
+
+microbenchmark(play_dice1(x_2), play_dice2(x_2), play_dice3(x_2), play_dice4(x_2))
+```
+
+Answer: I notice that by using built-in R vectorized function will be faster in both input of 100 and 10000. At low input, the version3(by collapsing the die rolls into a single table) will performs worst, but at larger input it performs as well as version2. And at larger input, the for loop function will performs worst even though it performs almost same as Built-in R vectorized functions. But because in each version I included the replacement codes, that replace 2 into 0, 1 into -2, etc, so the difference may not ar large as I thought, but if we set our input to 10000000, the must be huge difference.
+
+part(e): Since all four versions gives the same result, we will use the version2 to do the estimation.
+
+```{r}
+## Monte Carlo Estimation
+reps <- 100
+est1 <- vector(length = reps)
+
+for (i in seq_len(reps)) {
+  est1[i] <- play_dice2(1000) / 1000
+}
+
+
+est2 <- vector(length = reps)
+for (i in seq_len(reps)) {
+  est2[i] <- play_dice2(10000) / 10000
+}
+
+
+est3 <- vector(length = reps)
+for (i in seq_len(reps)) {
+  est3[i] <- play_dice2(100000) / 100000
+}
+```
+
+```{r}
+# draw the boxplot for all three
+boxplot(data.frame(est1, est2, est3))
+abline(h = 0, col = 'red')
+```
+
+```{r}
+# draw histgram for all three
+par(mfrow = c(1, 3))
+hist(est1, breaks = 100)
+hist(est2, breaks = 100)
+hist(est3, breaks = 100)
+
+```
+
+Answer: so by using Monte Carlo estimation, it seems that this is a fair game.
+
+```         
+```
+
+```{r}
+
+```
+
+## Problem 2
+
+part(a): The below codes shows the rename of variables
+
+```{r}
+setwd("C:/Users/Lenovo/Downloads") #set the work directory
+warning('off')
+data <- read.csv("cars (1).csv", header = TRUE)
+names(data) <-c("D_hei",
+                "D_len",
+                "D_wid",
+                "Edrive",
+                "Eeng",
+                "EHyb",
+                "EFGear",
+                "Etrans",
+                "FCmpg",
+                "Fueltype",
+                "FHmpg",
+                "IClass",
+                "IID",
+                "IMake",
+                "IMyear",
+                "Iyear",
+                "Ehpower",
+                "Etor")
+```
+
+part(b): The below code restricted our original data to those cars with fuel type of gasoline, and I renamed it to data1.
+
+```{r}
+data1 <- data[which(data$Fueltype == "Gasoline"), ]
+```
+
+part(c):we will do several different regressions:
+
+```{r}
+# The linear regression that only contain the predictor horsepower
+model_1 <- lm(FHmpg ~ Ehpower, data = data1)
+summary(model_1)
+```
+
+If we only contain the variable of horsepower, basically our conclusion will be with one more unit horsepower, the highway mpg will decrease by 0.034 averagely, and it seems the coefficient is statistically significant.
+
+```{r}
+#linear model with horsepower and torque of the engine
+model_2 <- lm(FHmpg ~ Ehpower + Etor, data = data1)
+summary(model_2)
+```
+
+Now if we contain the variable of torque, then coefficient of horsepower would be explained as: fix torque, one more unit of horsepower will increase the mpg by 0.019 averagely, and the coefficient is statistically significant.
+
+```{r}
+#linear model with horsepower and three dimention of the car
+model_3 <- lm(FHmpg ~ Ehpower + D_hei + D_len + D_wid, data = data1)
+summary(model_3)
+```
+
+Now if we contain the variable of all three dimensions, then coefficient of horsepower would be explained as: fix other variables, one more unit of horsepower will decrease the mpg by 0.0334 averagely, and the coefficient is statistically significant. Since the length seems statistically insignificant, we will remove it in the future.
+
+```{r}
+# linear model with horsepower and the year the car was released
+data1$Iyear[data1$Iyear == 2009] <- "2009"
+data1$Iyear[data1$Iyear == 2010] <- "2010"
+data1$Iyear[data1$Iyear == 2011] <- "2011"
+data1$Iyear[data1$Iyear == 2012] <- "2012"
+model_4 <-  lm(FHmpg ~ Ehpower + Iyear, data = data1)
+summary(model_4)
+```
+
+Now if we contain the variable of year of car released, then coefficient of horsepower would be explained as: fix other variables, one more unit of horsepower will decrease the mpg by 0.0344 averagely, and the coefficient is statistically significant. Since new variables seems statistically insignificant, we will also remove it in the future.
+
+```{r}
+# linear model with variable of horsepower, torque of engine, height and width of the car
+model_5 <- lm(FHmpg ~ Ehpower + Etor + D_hei + D_wid, data = data1)
+summary(model_5)
+```
+
+Now if we contain the other 3 variables, then coefficient of horsepower would be explained as: fix other variables, one more unit of horsepower will increase the mpg by 0.0181 averagely, and the coefficient is statistically significant. Since variable D_wid seems statistically insignificant, we will remove it in the future.
+
+```{r}
+#last regression contains variables of Ehpower, Etor, D_hei
+model_6 <- lm(FHmpg ~ Ehpower + Etor + D_hei, data = data1)
+summary(model_6)
+```
+
+Now if we contain the other 2 variables, then coefficient of horsepower would be explained as: fix other variables, one more unit of horsepower will increase the mpg by 0.0183 averagely, and the coefficient is statistically significant.
+
+General conclusion: I think according common sense, higher horsepower should give us higher highway mpg, and after we removed some unnecessary variables(coefficient that is not statistically significant), the summary of last regression modelroughly tell us that given other variables unchanged, the one more unit of horsepower will increase the highway mpg 0.018 averagely. But in fact we still need to do more work to judge the causal effect since we don't know if there are some dependency between different variables, and the R-squared we get in each model is not big enough to help us conclude if the model fit our data well.
+
+part(d): we first do a general linear regression(here the Mpg I will understand it as highway Mpg), as the code shown below:
+
+```{r}
+library(emmeans)
+model <- lm(Ehpower ~ FHmpg * Etor , data = data1)
+summary(model)
+```
+
+Now I will choose three values of torque which are 235, 236, and 350, and I will form a new dataset, which I call it data2, and then I will fit a new linear model to this new data
+
+```{r}
+data2 <- data1[which(data1$Etor == 235 | data1$Etor == 236 | data1$Etor == 350),]
+data2$Etor <- as.factor(data2$Etor)
+model_inter <- lm(Ehpower ~ FHmpg * Etor , data = data2)
+summary(model_inter)
+```
+
+```{r}
+# generate the interaction plot
+emmip(model_inter, Etor ~ FHmpg, at = list(FHmpg = 20 : 40))
+```
+
+So it seems that there is a interaction between the highway mpg and the torque in there effect on the horsepower, because these three lines are not parallel.
+
+part(e):
+
+I will do the manually matrix computation for the linear model using data2.
+
+```{r}
+row_number <- dim(data2)[1]
+intercept <- rep(1, row_number)
+
+
+
+E235 <- rep(0, row_number)
+E235[data2$Etor == 235] <- 1
+
+E236 <- rep(0, row_number)
+E236[data2$Etor == 236] <- 1
+
+E350 <- rep(0, row_number)
+E350[data2$Etor == 350] <- 1
+
+mph235 <- data2$FHmpg * E235
+mph236 <- data2$FHmpg * E236
+mph350 <- data2$FHmpg * E350
+
+X <- cbind(intercept, data2$FHmpg, E236, E350, mph236, mph350)
+y <- data2$Ehpower
+
+Xtx_inv <- solve(t(X)%*%X)
+result <- (Xtx_inv)%*%t(X)%*%y
+result
+
+```
+
+```{r}
+summary(model_inter)
+```
+
+Answer : So we get exactly the same result by using manually matrix computation.
