@@ -1,0 +1,299 @@
+---
+title: "STATS 506 HW3"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## Problem 2
+
+github : <https://github.com/KingOliver666/HW-.git>
+
+```{r}
+library(DBI)
+library(RSQLite)
+sakila <- dbConnect(RSQLite :: SQLite(), "C:/Users/Lenovo/Downloads/sakila_master.db")
+dbListTables(sakila)
+
+```
+
+```{r}
+
+```
+
+```{r}
+dbGetQuery(sakila, "SELECT * FROM language")
+```
+
+Part(a):
+
+```{r}
+dbGetQuery(sakila, "SELECT  
+                            
+                    la.name, 
+                    language_id, 
+                    COUNT(language_id)
+                    FROM film fi
+                    JOIN language la 
+                          USING(language_id)
+                    WHERE language_id != 1
+                    GROUP BY la.name, language_id
+                    ORDER BY COUNT(language_id)")
+
+                   
+```
+
+Answer: This tells us that all movies use language of English, there is no movie use other one of five language.
+
+Part(b):
+
+we first use SQL query to solve this problem
+
+```{r}
+dbGetQuery(sakila, "SELECT 
+                    category_id, 
+                    c.name, 
+                    COUNT(category_id)
+                    
+                    FROM film fi
+                         JOIN film_category fc USING (film_id)
+                         JOIN category c USING (category_id)
+                    GROUP BY category_id, c.name
+                    ORDER BY COUNT(category_id) DESC
+                    
+                    LIMIT 3")
+```
+
+Then we will use R to solve this problem
+
+```{r}
+table_joined<- dbGetQuery(sakila, "SELECT *
+                                   FROM film fi
+                                   JOIN film_category fc 
+                                        USING (film_id)
+                                   JOIN category c 
+                                        USING (category_id)")
+
+frequency_id <- table(table_joined$category_id)
+
+number_movie <- max(frequency_id)
+
+max_id <- as.integer(names(frequency_id[which.max(frequency_id)]))
+
+genre <- table_joined$name[which(table_joined$category_id == max_id)]
+
+print(c(genre[1], number_movie))
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+Answer: thus, we have found that the genre of the movie that most common in the data is "sport", and there are totally 74 movies of this genre.
+
+Part(c)
+
+We first solve this problem use SQL
+
+```{r}
+dbGetQuery(sakila, " SELECT 
+                      country, 
+                      co.country_id
+                      
+                      FROM customer c
+                      JOIN address a 
+                        USING(address_id)
+                      JOIN city ci 
+                        USING(city_id)
+                      JOIN country co 
+                        USING(country_id)
+                      GROUP BY country, co.country_id
+                      
+                      HAVING COUNT(customer_id) = 9")
+```
+
+Now we solve this problem use R
+
+```{r}
+#We first extract a joined table using SQL
+cus <-dbGetQuery(sakila, "SELECT *
+
+                          FROM customer c
+                          JOIN address a 
+                               USING(address_id)
+                          JOIN city ci 
+                               USING(city_id)
+                          JOIN country co 
+                               USING(country_id)")
+
+
+confreq <- table(cus$country) # find the country frequency
+
+cus9 <- names(confreq[which(confreq == 9)])# find the country that have 9 customers
+cus9
+```
+
+Answer: So by use both method, we find the country have exactly 9 customers is United Kingdom.
+
+## Problem 3
+
+```{r}
+setwd("C:/Users/Lenovo/Downloads")
+data <- read.csv("us-500.csv", header = TRUE)
+```
+
+Part(a)：
+
+```{r}
+num_row <- nrow(data)
+net_prop <- sum(grepl("net", data$email)) / num_row
+net_prop
+```
+
+Answer : There are about 14.6% of email address are hosted at a domain with TLD ".net".
+
+Part(b):
+
+```{r}
+alpnum <-grepl("^[[:alnum:]]+@", data$email)#find all emails that looks normal
+
+alpnum_prop <- sum(alpnum) / num_row
+
+noalnum_prop <- 1 - alpnum_prop#This is the proportion of email that have at least one non alphanumeric character
+noalnum_prop
+```
+
+Answer: So there are about 50.6% emails that have at least one non alphanumeric character.
+
+Part(c):
+
+```{r}
+
+```
+
+It suffices to find the most common area code for "phone1".
+
+```{r}
+area_code <- substr(data$phone1, 1, 3)# We find all area code
+
+code_table <- table(area_code)#get the table of frequency
+
+MC_code <- names(code_table[which.max(code_table)])#find the area code that has highest frequency
+MC_code
+```
+
+Answer: so the most common area code among all phone numbers is "973"
+
+Part(d):
+
+we first extract all apartment number by using for loop
+
+```{r}
+address <- strsplit(data$address, " ") #split the string and we only care about the apartment number
+
+apart <- rep(NA, num_row)
+
+for (i in 1: num_row){
+  apart[i] <- address[[i]][length(address[[i]])]
+}
+
+apart_num<- apart[grep("#", apart)] # find those address that contains a apartment number
+
+```
+
+```{r}
+# remove "#" and store those integers in a vector
+length <- length(apart_num)
+for (i in 1: length){
+  # get the apartment number and we will remove "#" 
+  apart_num[i] <- substr(apart_num[i], 2, nchar(apart_num[i]))
+}
+apart_num <- as.numeric(apart_num)
+```
+
+Thus we now have constructed the vector of apartment number, then we will start to draw a histogram:
+
+```{r}
+hist(log(apart_num), xlab = "log of apartment number")
+
+```
+
+Part(e):
+
+We first find the leading number for each element in the vector "apart_num"
+
+```{r}
+apart_char <- as.character(apart_num)
+first_dig <- as.numeric(substr(apart_char, 1, 1))
+```
+
+Then we will construct a vector to store the expected value for each number in sample size of 500. And I just copy the probability of leading digit for each number (1-9) from material that professor provided as store it as a vector named prob
+
+```{r}
+prob <- c(0.301, 0.176, 0.125, 0.097, 0.079, 0.067, 0.058, 0.051, 0.046)#This is our expected probality for leading digit
+
+lead <- as.vector(table(first_dig)) #get count for each number
+```
+
+Now, we will conduct a Chi-squared test to check if the leading digit we observed follows Benford' s law.
+
+```{r}
+chisq.test(lead, p = prob) #conduct a Chi-squared test
+
+```
+
+```{r}
+hist(first_dig)
+```
+
+Answer : by using Chi-squared test, the p-value is less than 2.214e-10, meaning we will move to alternative hypothesis that the distribution of leading digit what we observed does not follow Benford's law. Also, we notice in this histogram, we can't see a decreasing trend, and this tells us our sample does not follow Benford's law. So maybe the apartment numbers would not pass as real data as we expected(since these data are fake data)
+
+Part(f):
+
+we first find street number for each person
+
+```{r}
+street <- rep(NA, num_row)
+
+for (i in 1: num_row){
+  street[i] <- address[[i]][1]
+}
+
+# Then I will get the vector of last digit using for loop
+last_dig <- rep(NA, num_row)
+
+for (i in 1: num_row){
+  last_dig[i] <- as.numeric(substr(street[i], nchar(street[i]), nchar(street[i])))
+}
+
+```
+
+Version1: Since I'm not sure if there exist a last digit law, I read some materials from professor provided and I assume the probability of last digit for each number is 0.1. So I will first solve the problem under my assumption.
+
+```{r}
+count_last <- as.vector(table(last_dig))
+chisq.test(count_last, p = rep(0.1, 10))
+```
+
+```{r}
+hist(last_dig)
+```
+
+The P-value is 0.2156, so if my assumption holds, then we fail to reject H_0, and we may conclude that the last_digit we observed follows Benford's law of last digit. Also the histogram looks like a discrete uniform distribution
+
+Version2: Now I will assume that the last digit follows Benford's law of leading digit, then I need to remove all 0's, and then do a Chi-Squared test
+
+```{r}
+last_dig0 <- last_dig[last_dig != 0] # find those street number not ending at 0
+chisq.test(as.vector(table(last_dig0)), p = prob)
+```
+
+Then under our assumption, we may say it seems that the last digit we observed does not follow Benford' s law since we got very small p-value.
