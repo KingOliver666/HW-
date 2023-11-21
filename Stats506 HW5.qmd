@@ -1,0 +1,395 @@
+---
+title: "Stats506 HW5"
+format: html
+editor: visual
+embed-resources: true
+---
+
+Github: <https://github.com/KingOliver666/HW-.git>
+
+## Problem 1
+
+Use the "nnmaps" data set again. I'd recommend using **ggplot2** for these, but you can do them in base R or **plotly** if you'd prefer.
+
+Part(a):
+
+Produce a graph of the **mean** monthly temperature in **celsius**. Draw a scatter-plot where the x-axis is month and the y-axis is the average monthly temperature in celsius. Add a line connecting the points within each season and color the lines and points by season (same color for lines and points in the same season). Be sure both x-axis and the legend are ordered appropriately, and that all labels/titles are clear and ready for publication (e.g. no variable names).
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+nnmaps <- read.csv("C:/Users/Lenovo/Downloads/chicago-nmmaps.csv")
+# transform the unit of temperature to Celsius
+nnmaps$temp_c <- (nnmaps$temp - 32) * 5/9
+
+# Order the date with month
+month_order <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+nnmaps$month <- factor(nnmaps$month, levels = month_order)
+
+#group our data in month, and then compute the average temperature for each month
+temp_month <- nnmaps %>%
+  group_by(month, season) %>%
+  summarize(average_temp = mean(temp_c), na.rm = TRUE) %>%
+  ungroup()
+
+temp_month
+
+# Start ggplot
+ggplot(temp_month, aes(x = month, y = average_temp, group = season, color = season)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Monthly Temperature by Season and Month",
+       x = "Month",
+       y = "Average Temperature in Celsius")
+```
+
+Part(b)
+
+Produce a similar plot with four sets of lines: mean monthly temperature in celsius, mean montly O3, mean monthly PM10, and mean monthly dewpoint. Figure out a way to distinguish between the four lines. Again, make sure the plot is publication-ready (clean and clear labels). Use the plot to answer the following question:
+
+"Which of the four variables seems to have the least seasonal trend?"
+
+I'm not sure if I should put all four lines into a single plot because the meaning of plot does not make any sense for the different unit of "y - variable", I will first draw 4 different ggplot, and then use basic plot that put 4 lines in a plot.
+
+Plot for O3
+
+```{r}
+temp_O3 <- nnmaps %>%
+  group_by(month, season) %>%
+  summarize(average_O3 = mean(o3), na.rm = TRUE) %>%
+  ungroup()
+
+temp_O3
+
+# Start ggplot
+ggplot(temp_O3, aes(x = month, y = average_O3, group = season, color = season)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Monthly o3 by Season and Month",
+       x = "Month",
+       y = "Average o3")
+```
+
+Plot for PM10
+
+```{r}
+temp_pm10 <- nnmaps[!is.na(nnmaps$pm10), ]%>%
+  group_by(month, season) %>%
+  summarize(average_pm10 = mean(pm10), na.rm = TRUE) %>%
+  ungroup()
+
+temp_pm10
+
+# Start ggplot
+ggplot(temp_pm10, aes(x = month, y = average_pm10, group = season, color = season)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Monthly pm10 by Season and Month",
+       x = "Month",
+       y = "Average pm10")
+```
+
+Plot for dewpoint:
+
+```{r}
+temp_dew <- nnmaps %>%
+  group_by(month, season) %>%
+  summarize(average_dew = mean(dewpoint), na.rm = TRUE) %>%
+  ungroup()
+
+temp_dew
+
+# Start ggplot
+ggplot(temp_dew, aes(x = month, y = average_dew, group = season, color = season)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Average Monthly dewpoint by Season and Month",
+       x = "Month",
+       y = "Average dewpoint")
+```
+
+Answer: after looking as 4 different plots, it seem that the variable of "PM10" have the least seasonal trend.
+
+The below is the basic plot
+
+```{r}
+plot(temp_month$month, temp_month$average_temp, xlab = "month", ylab = "values", main = "Four lines", ylim = c(-20, 110))
+
+
+#Plot points for average temperature vs month
+points(temp_month$month[temp_month$season == "Winter"], temp_month$average_temp[temp_month$season == "Winter"], col = "blue", pch = 16)
+points(temp_month$month[temp_month$season == "Spring"], temp_month$average_temp[temp_month$season == "Spring"], col = "green", pch = 16)
+points(temp_month$month[temp_month$season == "Summer"], temp_month$average_temp[temp_month$season == "Summer"], col = "red", pch = 16)
+points(temp_month$month[temp_month$season == "Autumn"], temp_month$average_temp[temp_month$season == "Autumn"], col = "pink", pch = 16)
+
+#Plot points for average dew vs month
+points(temp_dew$month[temp_dew$season == "Winter"], temp_dew$average_dew[temp_dew$season == "Winter"], col = "blue", pch = 16)
+points(temp_dew$month[temp_dew$season == "Spring"], temp_dew$average_dew[temp_dew$season == "Spring"], col = "green", pch = 16)
+points(temp_dew$month[temp_dew$season == "Summer"], temp_dew$average_dew[temp_dew$season == "Summer"], col = "red", pch = 16)
+points(temp_dew$month[temp_dew$season == "Autumn"], temp_dew$average_dew[temp_dew$season == "Autumn"], col = "pink", pch = 16)
+
+#Plot points for average O3 vs month
+points(temp_O3$month[temp_O3$season == "Winter"], temp_O3$average_O3[temp_O3$season == "Winter"], col = "blue", pch = 16)
+points(temp_O3$month[temp_O3$season == "Spring"], temp_O3$average_O3[temp_O3$season == "Spring"], col = "green", pch = 16)
+points(temp_O3$month[temp_O3$season == "Summer"], temp_O3$average_O3[temp_O3$season == "Summer"], col = "red", pch = 16)
+points(temp_O3$month[temp_O3$season == "Autumn"], temp_O3$average_O3[temp_O3$season == "Autumn"], col = "pink", pch = 16)
+
+#Plot points for average pm10
+points(temp_pm10$month[temp_pm10$season == "Winter"], temp_pm10$average_pm10[temp_pm10$season == "Winter"], col = "blue", pch = 16)
+points(temp_pm10$month[temp_pm10$season == "Spring"], temp_pm10$average_pm10[temp_pm10$season == "Spring"], col = "green", pch = 16)
+points(temp_pm10$month[temp_pm10$season == "Summer"], temp_pm10$average_pm10[temp_pm10$season == "Summer"], col = "red", pch = 16)
+points(temp_pm10$month[temp_pm10$season == "Autumn"], temp_pm10$average_pm10[temp_pm10$season == "Autumn"], col = "pink", pch = 16)
+
+#add lines to each variable
+lines(temp_month$month, temp_month$average_temp, lty = 1)
+lines(temp_dew$month, temp_dew$average_dew,  lty = 20)
+lines(temp_O3$month, temp_O3$average_O3,  lty = 8)
+lines(temp_pm10$month, temp_pm10$average_pm10,  lty = 15)
+
+#add legend
+legend("topleft", legend = c("Winter", "Spring", "Summer", "Autumn"),
+       col = c("blue", "green", "red", "purple"),
+       pch = c(16, 16, 16, 16),
+       title = "Seasons")
+
+legend("topright", legend = c("Temperature", "Dew", "O3", "Pm10"),
+       lty = c(1, 20, 8, 15),
+       title = "Variables")
+```
+
+## Problem 2
+
+Create a class to represent a polynomial expression (such as $7x^3-3x+2$)) called `poly`. Do this using S4.
+
+a.  For the `poly` class, define the following:
+
+    -   A constructor
+
+    -   A validator
+
+    -   A `show` method
+
+    -   Addition and substraction
+
+```{r}
+# The input should be a vector of coefficient that the length of vector is the (degree of polynonial + 1). Suppose our polynomial is x^3 + x + 1, then the coefficient vector would be (1, 0, 1, 1), and the degree of the polynomial is 4 - 1 = 3
+setClass("Mpoly", 
+         slots = c(coef = "numeric", degree = "character"))
+
+
+
+make_poly <- function(coef_1, degree_1){
+  return(new("Mpoly", coef = coef_1, degree = degree_1))
+}
+
+setValidity("Mpoly", function(object){
+  if (!is.numeric(object@coef)){
+    stop("Coefficient should be a number")
+  }
+  if (is.na(as.numeric(object@degree))){
+    stop("Invalid degree")
+  }
+  if (length(object@coef) != as.numeric(object@degree) + 1){
+    stop("this is a wrong polynomial")
+  }
+})
+
+
+
+setGeneric("deg",
+           function(object){
+             standardGeneric("deg")
+           })
+
+
+
+setMethod("deg", "Mpoly",
+          function(object){
+            return(slot(object, "degree"))
+          })
+
+
+#This code intend to display our polynomial, that first build a vector with the same length(n) of coefficient, and store (x^(n-1), x^(n-2), ... x^(0)), then use "paste" and "cat" to construct polynomial like ax^n + bx^(n-1)...+ cx^0
+setMethod("show", "Mpoly",
+          function(object) {
+            validObject(object)
+            n <- length(object@coef)
+            power_strings <- character(n)
+            for (i in 1:n) {
+              power_strings[i] <- if (i == n) {
+                paste(object@coef[i])
+              } else {
+                paste(object@coef[i], "x^", n - i, sep = "")
+              }
+            }
+            polynomial_string <- paste(power_strings, collapse = " + ")
+            cat("Polynomial expression:\n", polynomial_string, "\n")
+          })
+
+getMethod("+")
+
+
+#This code intend to define the "+" operation
+setMethod("+", signature(e1 = "Mpoly",
+                         e2 = "Mpoly"),
+          function(e1, e2){
+            # Here we check if two polynomials have the same degree, if not, we will add some zero terms to the shorter one so that two polynomial have the same length of vector,and so we can add two vectors
+            if (length(e1@coef) != length(e2@coef)){
+              zeros <- abs(length(e1@coef) - length(e2@coef))
+              if (length(e1@coef) > length(e2@coef)){
+                e2 <- new("Mpoly", coef = c(rep(0, zeros),e2@coef), 
+                                            degree = 
+                            as.character(as.numeric(e2@degree)+zeros))
+              }
+              else{
+                e1 <- new("Mpoly", coef = c(rep(0, zeros), e1@coef),
+                                            degree = 
+                            as.character(as.numeric(e1@degree)+zeros))
+              }
+            }
+            
+            #Here if two polynomials are the same, we will return polynomial with constant 0
+            if (sum(e1@coef + e2@coef == rep(0, length(e1@coef))) 
+                == length(e1@coef)){
+              e3 <- new("Mpoly", coef = 0, degree = "0")
+              return(e3)
+            }
+            
+            #Here we will return our final polynomial
+            raw_coef <- e1@coef + e2@coef
+            first_non_zero <- which(raw_coef != 0)[1]
+            new_coef <- raw_coef[first_non_zero : length(raw_coef)]
+            e3 <- new("Mpoly", coef = new_coef, 
+                      degree = as.character(length(new_coef) - 1))
+            return(e3)
+          })
+
+
+getMethod("-")
+
+
+#The idea of this code is very similar the "addition" one, 
+setMethod("-", signature(e1 = "Mpoly",
+                         e2 = "Mpoly"),
+          function(e1, e2){
+            if (length(e1@coef) != length(e2@coef)){
+              zeros <- abs(length(e1@coef) - length(e2@coef))
+              if (length(e1@coef) > length(e2@coef)){
+                e2 <- new("Mpoly", coef = c(rep(0, zeros),e2@coef), 
+                                            degree = 
+                            as.character(as.numeric(e2@degree)+zeros))
+              }
+              else{
+                e1 <- new("Mpoly", coef = c(rep(0, zeros), e1@coef),
+                                            degree = 
+                            as.character(as.numeric(e1@degree)+zeros))
+              }
+            }
+            
+            
+            if (sum(e1@coef - e2@coef == rep(0, length(e1@coef))) 
+                == length(e1@coef)){
+              e3 <- new("Mpoly", coef = 0, degree = "0")
+              return(e3)
+            }
+            
+            
+            raw_coef <- e1@coef - e2@coef
+            first_non_zero <- which(raw_coef != 0)[1]
+            new_coef <- raw_coef[first_non_zero : length(raw_coef)]
+            e3 <- new("Mpoly", coef = new_coef, 
+                      degree = as.character(length(new_coef) - 1))
+            return(e3)
+          })
+
+
+```
+
+b: Use your poly class to run the following code
+
+```{r}
+p1 <- make_poly(c(3, 0, 2), degree = "2")
+p2 <- make_poly(c(7, -2, -1, 17), degree = "3")
+p1
+p2
+p1 + p2
+p1 - p2
+```
+
+## Problem 3
+
+Install and load the package [**nycflights13**](https://cran.r-project.org/package=nycflights13).
+
+a.  Generate a table (which can just be a nicely printed tibble) reporting the mean and median departure delay per airport. Generate a second table (which again can be a nicely printed tibble) reporting the mean and median arrival delay per airport. Exclude any destination with under 10 flights. Do this exclusion through code, not manually.
+
+    Additionally,
+
+    -   Order both tables in descending mean delay.
+
+    -   Both tables should use the airport *names* not the airport *codes*.
+
+    -   Both tables should print all rows.
+
+```{r}
+library(data.table)
+library(nycflights13)
+
+##This is the code the report mean delay per airport
+flights_table <- as.data.table(flights)
+airports_table <- as.data.table(airports)
+
+
+flights_group <- flights_table[, .(mean_delay = mean(dep_delay, na.rm = TRUE),
+                                   med_delay = median(dep_delay, na.rm = TRUE),
+                                   numflights = .N), by = origin]
+
+flights_filtered <- flights_group[numflights >= 10]
+
+setnames(flights_filtered, "origin", "faa")
+
+Joined_flights_delay <- merge(flights_filtered, airports_table, by = "faa")
+
+flights_delay <- Joined_flights_delay[, .(name, mean_delay, med_delay)]
+
+flights_delay <- flights_delay[order(-mean_delay)]
+
+flights_delay
+```
+
+```{r}
+## This is the code to report arrival delay
+flights_a <- flights_table[, .(mean_delay = mean(arr_delay, na.rm = TRUE),
+                                   med_delay = median(arr_delay, na.rm = TRUE),
+                                   numflights = .N), by = dest]
+
+flights_filtered_a <- flights_a[numflights >= 10]
+
+setnames(flights_filtered_a, "dest", "faa")
+
+Joined_flights_arrival <- merge(flights_filtered_a, airports_table, by = "faa" , all.x = TRUE)
+
+flights_arrival <- Joined_flights_arrival[, .(name, mean_delay, med_delay)]
+
+flights_arrival <- flights_arrival[order(-mean_delay)]
+
+flights_arrival
+```
+
+b.  How many flights did the aircraft model with the fastest average speed take? Produce a tibble with 1 row, and entires for the model, average speed (in MPH) and number of flights.
+
+```{r}
+# This is the code that produce one row and the model with highest MPH and number of flights
+plane_table <- as.data.table(planes)
+flights_speed <- merge(flights_table, plane_table, by = "tailnum", all.x = TRUE)
+
+flights_speed[, time := air_time / 60]
+flights_speed[, mph := distance / time]
+
+flights_speed_sum <- flights_speed[, .(average_mph = mean(mph, na.rm = TRUE),
+                                       num_flights = .N),
+                                   by = model]
+
+flights_speed_sum <- flights_speed_sum[order(-average_mph)]
+
+flights_speed_sum[1]
+```
