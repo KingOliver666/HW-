@@ -1,0 +1,186 @@
+---
+title: "Stats506 HW6"
+format: html
+editor: visual
+embed-resources: true
+---
+
+Github: <https://github.com/KingOliver666/HW-.git>
+
+## Problem 1
+
+```{r}
+##load our data and transform the tibble "flight" into a data.frame
+library(nycflights13)
+library(parallel)
+library(parallelly)
+flights <- nycflights13::flights
+flights <- as.data.frame(flights)
+flights <- flights[!is.na(flights$arr_time), ]
+```
+
+```{r}
+## Then we want to extract all different dest to start stratafied bootstrapping
+strata_dest <- unique(flights$dest)
+origin_group <- unique(flights$origin)
+Origin <- c("EWR", "LGA", "JFK")
+```
+
+```{r}
+#Here is the function to run stratified bootstrapping without using parallel
+
+stratified_boot <- function(num_boot){
+
+  vector_EWR <- rep(NA, num_boot)
+  vector_LGA <- rep(NA, num_boot)
+  vector_JFK <- rep(NA, num_boot)
+  
+  for (j in 1 : num_boot){
+    Total_EWR <- rep(NA, length(strata_dest))
+    Total_LGA <- rep(NA, length(strata_dest))
+    Total_JFK <- rep(NA, length(strata_dest))
+    nrow_EWR <- rep(NA, length(strata_dest))
+    nrow_LGA <- rep(NA, length(strata_dest))
+    nrow_JFK <- rep(NA, length(strata_dest))
+    
+    for (i in 1:length(strata_dest)){
+      dat <- flights[which(flights$dest == strata_dest[i]), ]
+      n <- nrow(dat)
+      dat <- dat[sample(1:n, replace = TRUE),]
+      #Calculate the total and average arrival time for each strata
+      Total_EWR[i] <- sum(dat$arr_time[dat$origin == origin_group[1]])
+      Total_LGA[i] <- sum(dat$arr_time[dat$origin == origin_group[2]])
+      Total_JFK[i] <- sum(dat$arr_time[dat$origin == origin_group[3]])
+      
+      nrow_EWR[i] <- length(dat$arr_time[dat$origin == origin_group[1]])
+      nrow_LGA[i] <- length(dat$arr_time[dat$origin == origin_group[2]])
+      nrow_JFK[i] <- length(dat$arr_time[dat$origin == origin_group[3]])
+    }
+    
+    #Calculate the average for each origin
+    mean_EWR <- sum(Total_EWR)/sum(nrow_EWR)
+    mean_LGA <- sum(Total_LGA)/sum(nrow_LGA)
+    mean_JFK <- sum(Total_JFK)/sum(nrow_JFK)
+    
+    # Now we get a vector that stores all expected arr_time for each bootstrap
+    vector_EWR[j] <- mean_EWR
+    vector_LGA[j] <- mean_LGA
+    vector_JFK[j] <- mean_JFK
+  }
+   #The below code will generate a table including related statistics and confidence interval with significance level of 0.05
+  Origin <- c("EWR", "LGA", "JFK")
+  mean_stat <- c(mean(vector_EWR), mean(vector_LGA), mean(vector_JFK))
+  sd_stat <- c(sd(vector_EWR), sd(vector_LGA), sd(vector_JFK))
+  lower_bound <- c(mean(vector_EWR) - 1.96 * sd(vector_EWR),
+                   mean(vector_LGA) - 1.96 * sd(vector_LGA),
+                   mean(vector_JFK) - 1.96 * sd(vector_JFK))
+  upper_bound <- c(mean(vector_EWR) + 1.96 * sd(vector_EWR),
+                   mean(vector_LGA) + 1.96 * sd(vector_LGA),
+                   mean(vector_JFK) + 1.96 * sd(vector_JFK))
+  stats_table <- data.frame(Origin, mean_stat, sd_stat, lower_bound, upper_bound)
+  
+  stats_table
+}
+```
+
+We first construct a function for parallel processing
+
+```{r}
+#The idea of this function is basically the same as above but with different outcome
+stratified_boot_paralell <- function(num_boot){
+
+  vector_EWR <- rep(NA, num_boot)
+  vector_LGA <- rep(NA, num_boot)
+  vector_JFK <- rep(NA, num_boot)
+  
+  for (j in 1 : num_boot){
+    Total_EWR <- rep(NA, length(strata_dest))
+    Total_LGA <- rep(NA, length(strata_dest))
+    Total_JFK <- rep(NA, length(strata_dest))
+    nrow_EWR <- rep(NA, length(strata_dest))
+    nrow_LGA <- rep(NA, length(strata_dest))
+    nrow_JFK <- rep(NA, length(strata_dest))
+    
+    for (i in 1:length(strata_dest)){
+      dat <- flights[which(flights$dest == strata_dest[i]), ]
+      n <- nrow(dat)
+      dat <- dat[sample(1:n, replace = TRUE),]
+      
+      Total_EWR[i] <- sum(dat$arr_time[dat$origin == origin_group[1]])
+      Total_LGA[i] <- sum(dat$arr_time[dat$origin == origin_group[2]])
+      Total_JFK[i] <- sum(dat$arr_time[dat$origin == origin_group[3]])
+      
+      nrow_EWR[i] <- length(dat$arr_time[dat$origin == origin_group[1]])
+      nrow_LGA[i] <- length(dat$arr_time[dat$origin == origin_group[2]])
+      nrow_JFK[i] <- length(dat$arr_time[dat$origin == origin_group[3]])
+    }
+    
+    #Calculate the average for each origin
+    mean_EWR <- sum(Total_EWR)/sum(nrow_EWR)
+    mean_LGA <- sum(Total_LGA)/sum(nrow_LGA)
+    mean_JFK <- sum(Total_JFK)/sum(nrow_JFK)
+    
+    vector_EWR[j] <- mean_EWR
+    vector_LGA[j] <- mean_LGA
+    vector_JFK[j] <- mean_JFK
+  }
+  mean_stat <- c(mean(vector_EWR), mean(vector_LGA), mean(vector_JFK))
+  mean_stat
+}
+```
+
+## Time Consuming With Parallel Processing
+
+```{r}
+# Parallel Processing and compute the time 
+system.time({
+  reps <- 1000
+  cl <- makeCluster(detectCores())
+  clusterEvalQ(cl, library(nycflights13))
+  clusterExport(cl, c("flights", "stratified_boot_paralell", "strata_dest",   "origin_group"))
+  stats_para <- parLapply(cl, seq_len(reps), function(x)    stratified_boot_paralell(1))
+  stopCluster(cl)
+})
+```
+
+## Time Consuming Without Parallel Processing
+
+```{r}
+system.time({
+  table_1 <- stratified_boot(1000)
+})
+```
+
+Answer: Now notice that with 1000 bootstrapped samples, the efficiency of Parallel Processing is much better as we check the result above.
+
+## Two table Generated By Both Methods
+
+```{r}
+
+#This code will generate a table consisting related statistics and confidence interval.
+EWR_arr <- sapply(stats_para, function(x) x[1])
+LGA_arr <- sapply(stats_para, function(x) x[2])
+JFK_arr <- sapply(stats_para, function(x) x[3])
+
+mean_stat_para <- c(mean(EWR_arr), mean(LGA_arr), mean(JFK_arr))
+  sd_stat_para <- c(sd(EWR_arr), sd(LGA_arr), sd(JFK_arr))
+  lower_bound_para <- c(mean(EWR_arr) - 1.96 * sd(EWR_arr),
+                   mean(LGA_arr) - 1.96 * sd(LGA_arr),
+                   mean(JFK_arr) - 1.96 * sd(JFK_arr))
+  upper_bound_para <- c(mean(EWR_arr) + 1.96 * sd(EWR_arr),
+                   mean(LGA_arr) + 1.96 * sd(LGA_arr),
+                   mean(JFK_arr) + 1.96 * sd(JFK_arr))
+  stats_table_para <- data.frame(Origin, mean_stat_para, sd_stat_para, lower_bound_para, upper_bound_para)
+  
+
+```
+
+```{r}
+#Table without using Parallel processing
+table_1
+```
+
+```{r}
+#Table with parallel processing
+stats_table_para
+```
