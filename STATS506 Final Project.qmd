@@ -1,0 +1,287 @@
+---
+title: "STATS506 Final Project"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## Final Project
+
+## ADHCR and DHCR
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(survey)
+data <- read.csv("C:/Users/Lenovo/Downloads/cbecs2018_final_public.csv")
+data2 <- read.csv("C:/Users/Lenovo/Downloads/CBECS_FILTERED.csv")
+```
+
+```{r}
+## First rename all variables to lower case
+colnames(data) <- tolower(colnames(data))
+```
+
+```{r}
+#rename levels of region
+data$region <- as.factor(data$region)
+levels(data$region) <- c("Northeast", "Midwest", "South", "West")
+
+data$pubclim <- as.factor(data$pubclim)
+levels(data$pubclim) <- c("Cold or very cold", "Cool", "Mixed mild", "Warm", "Hot or very hot", "withheld")
+
+#We may delete those observations if nfloor is 994 or 995
+
+data$renlgt <- as.factor(data$renlgt)
+levels(data$renlgt) <- c("Yes", "No", "not applicable")
+
+data$renelc <- as.factor(data$renelc)
+levels(data$renelc) <- c("Yes", "No", "not applicable")
+```
+
+Now we would like to compute the ratio that the "(Absolute value of (heating - cooling)) / max(heating, cooling)", and if heating \> cooling, then the sign of this ratio is positive, otherwise be negative.
+
+```{r}
+# We first check if there is any NA in variable of "elhtbtu" and "elclbtu"
+print(any(is.na(data$elhtbtu)))
+print(any(is.na(data$elclbtu)))
+
+# Then we will need to remove those observations that contains NA in these two variables
+data <- data[which(!is.na(data$elhtbtu) & !is.na(data$elclbtu)),]
+data$normal_ele <-(data$elexp - mean(data$elexp))/ sd(data$elexp)
+data$elcns <- (data$elcns - mean(data$elcns))/ sd(data$elcns)
+# find those building that never use electricity on heating or cooling
+no_hc <- nrow(data[which(data$elclbtu == data$elhtbtu),])
+no_hc
+```
+
+```{r}
+# Now we construct two new columns named ratio and abs_ratio 
+
+ratio <- rep(NA, nrow(data))
+
+for (i in 1 : nrow(data)){
+  if (data$elhtbtu[i] > data$elclbtu[i]){
+    ratio[i] <- (data$elhtbtu[i] - data$elclbtu[i])/data$elhtbtu[i]^(2/3)
+  }
+  
+  if (data$elhtbtu[i] < data$elclbtu[i]){
+    ratio[i] <- -(data$elclbtu[i] - data$elhtbtu[i])/data$elclbtu[i]^(2/3)
+  }
+  
+  if (data$elhtbtu[i] == data$elclbtu[i]){
+    ratio[i] <- 1
+  }
+}
+
+data$ratio <- ratio
+data$abs_ratio <- abs(ratio)
+```
+
+Since there are some building that never use any electricity on heating and cooling, I will remove them when I compute the descriptive statistics between different regions and climate zone.
+
+```{r}
+data_hc <- data[!(data$elclbtu== 0 & data$elhtbtu == 0),]
+```
+
+Now I have get the data_hc that contains all buildings that have cost on heating and cooling, since this data uses complex survey, I will first compute those basic statistics according to the variable "finalwt"
+
+```{r}
+weight_ratio_mean <- sum(data_hc$ratio * data_hc$finalwt) / sum(data_hc$finalwt)
+weight_ratio_var <- sum(data_hc$finalwt * (data_hc$ratio - weight_ratio_mean)^2) /sum(data_hc$finalwt)
+
+sorted_data <- data_hc[order(data_hc$ratio), ]
+
+print(weight_ratio_mean)
+print(weight_ratio_var)
+```
+
+Now I will draw boxplot of the ratio for different region and climate zone, as well as their normalized electricity consumption
+
+```{r}
+ggplot(data_hc, aes(x = region, y = ratio)) + geom_boxplot() + labs(title = "Boxplot of DHCR for regions") + coord_cartesian(ylim = c(-100, 100))
+
+box_ele_region <- ggplot(data_hc, aes(x = region, y = elcns)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of Electricity consumption for regions") +
+  ylab("Normalized Electricity consumption")
+
+box_ele_region + coord_cartesian(ylim = c(-2, 2))
+
+
+
+```
+
+```{r}
+ggplot(data_hc, aes(x = pubclim, y = ratio)) + geom_boxplot() + labs(title = "Boxplot of DHCR for climate zone") + coord_cartesian(ylim = c(-200, 200))
+
+box_ele_climate <- ggplot(data_hc, aes(x = pubclim, y = elcns)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of Electricity consumption for climate zones") +
+  ylab("Normalized Electricity consumption")
+
+box_ele_climate + coord_cartesian(ylim = c(-2, 2))
+
+```
+
+Now I will take the absolute value of ratio and to check if there is difference between region and climate zone
+
+```{r}
+ggplot(data_hc, aes(x = region, y = abs_ratio)) + geom_boxplot() + labs(title = "Boxplot of ADHCR for regions") + coord_cartesian(ylim = c(0, 200))
+
+ggplot(data_hc, aes(x = pubclim, y = abs_ratio)) + geom_boxplot() + labs(title = "Boxplot of ADHCR for climate zone")
+```
+
+Now I will explore the basic statistics of ratio and ratio_abs within each region and climate zone
+
+```{r}
+## ratio for region
+ratio_region_table <- data_hc %>%
+  group_by(region) %>%
+  summarize(mean_DHCR = mean(ratio),
+            median_DHCR = median(ratio),
+            sd_DHCR = sd(ratio)) %>%
+  ungroup()
+
+ratio_region_table
+```
+
+```{r}
+## ratio for climate zone
+ratio_climate_table <- data_hc %>%
+  group_by(pubclim) %>%
+  summarize(mean_DHCR = mean(ratio),
+            median_DHCR = median(ratio),
+            sd_DHCR= sd(ratio)) %>%
+  ungroup()
+
+ratio_climate_table
+```
+
+```{r}
+## abs_ratio for region
+abs_ratio_region_table <- data_hc %>%
+  group_by(region) %>%
+  summarize(mean_ADHCR = mean(abs_ratio),
+            median_ADHCR = median(abs_ratio),
+            sd_ADHCR = sd(abs_ratio)) %>%
+  ungroup()
+
+abs_ratio_region_table
+
+
+## normalized_consumption for region
+ncons_region_table <- data_hc %>%
+  group_by(region) %>%
+  summarize(mean_cost = mean(elcns),
+            median_cost = median(elcns),
+            sd_cost = sd(elcns)) %>%
+  ungroup()
+
+ncons_region_table
+```
+
+```{r}
+## abs_ratio for climate
+abs_ratio_climate_table <- data_hc %>%
+  group_by(pubclim) %>%
+  summarize(mean_ADHCR = mean(abs_ratio),
+            median_ADHCR = median(abs_ratio),
+            sd_ADHCR = sd(abs_ratio)) %>%
+  ungroup()
+
+abs_ratio_climate_table
+
+## normalized_cost for climate
+ncost_climate_table <- data_hc %>%
+  group_by(pubclim) %>%
+  summarize(mean_cost = mean(elcns),
+            median_cost = median(elcns),
+            sd_cost = sd(elcns)) %>%
+  ungroup()
+
+ncost_climate_table
+```
+
+Now I will conduct ANOVA to test if the mean of abs_ratio within all regions are the same, and I will do the same thing to check it the abs_ratio within all climate zone are the same.
+
+```{r}
+table(data_hc$region[which(data_hc$pubclim == "withheld")])
+anova_region <- aov(abs_ratio ~ region, data = data_hc)
+summary(anova_region)
+```
+
+```{r}
+anova_climate <- aov(abs_ratio ~ pubclim, data = data_hc)
+summary(anova_climate)
+```
+
+So we can conclude not all region have the same average abs_ratio. And not all climate zone have the same average abs_ratio.
+
+## Model Selection
+
+We first consider the simplest case(linear regression) normal_ele \~ 100\*(abs_ratio) in data_hc
+
+```{r}
+lm_1 <- lm(elcns ~ I(abs_ratio), data = data_hc)
+
+summary(lm_1)
+```
+
+Now I considered several predictors and now I will first introduce same variables I interested in that influence on normalized electricity cost.
+
+```{r}
+# first devide  SQFT by 1e^3 for stabalitity of our model
+lmod_all <- lm(elcns ~ I(abs_ratio) + I(sqft/1000) + renelc + wkhrs +
+                 pctermn + renlgt + monuse +  laptpn,  data = data_hc)
+
+summary(lmod_all)
+
+lmod <- update(lmod_all, . ~ . - laptpn)
+summary(lmod)
+```
+
+```{r}
+lmod <- update(lmod, . ~ . -  monuse)
+summary(lmod)
+```
+
+```{r}
+rmse <- function(x, y)sqrt(mean(x - y)^2)
+```
+
+We will then use AIC to select our model, but here we need to delete some rows since there are so many NA'sle
+
+```{r}
+data_aic <- data_hc[which(!is.na(data_hc$renelc) & !is.na(data_hc$pctermn) & !is.na(data_hc$wkhrs) & !is.na(data_hc$monuse) & !is.na(data_hc$laptpn)), ]
+
+mod_aic <- lm(elcns ~ I(abs_ratio) + I(sqft/1000) + renelc + wkhrs +
+                 pctermn + renlgt + monuse +  laptpn, data = data_aic)
+step(mod_aic, direction = "both")
+```
+
+```{r}
+mod_aic_final <- lm(elcns ~ I(abs_ratio) + I(sqft/1000)  + renelc+ wkhrs +
+                 pctermn + renlgt, data = data_aic )
+summary(mod_aic_final)
+```
+
+```{r}
+library(leaps)
+mod_r <- regsubsets(elcns ~ I(abs_ratio) + I(sqft/1000) + renelc + wkhrs +
+                 pctermn + renlgt + monuse +  laptpn, 
+                 data = data_hc)
+
+summary(mod_r)
+```
+
+R\^2
+
+```{r}
+which.max(summary(mod_r)$adjr2)
+summary(mod_r)$adjr2
+
+mod_r_2 <- lm(elcns ~ I(abs_ratio) + I(sqft/1000) + renelc + wkhrs +
+                 pctermn + renlgt + monuse, data = data_hc)
+summary(mod_r_2)
+```
